@@ -312,6 +312,12 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 12869032}
   m_PrefabAsset: {fileID: 0}
+--- !u!95 &13024377 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 2929119099450096932, guid: 64b182395c0b6744a920c74bce3ece13,
+    type: 3}
+  m_PrefabInstance: {fileID: 79322361}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &13868028
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1411,6 +1417,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1553452949}
     m_Modifications:
+    - target: {fileID: 2929119099450096932, guid: 64b182395c0b6744a920c74bce3ece13,
+        type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: edf2ffd118f4d5145bf3e7190535bf79, type: 2}
+    - target: {fileID: 2929119099450096932, guid: 64b182395c0b6744a920c74bce3ece13,
+        type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2929119099450096932, guid: 64b182395c0b6744a920c74bce3ece13,
+        type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4132312772176831909, guid: 64b182395c0b6744a920c74bce3ece13,
         type: 3}
       propertyPath: m_Name
@@ -6592,7 +6613,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c17e6f86bbc878f4f9d005d2ae96decb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementSpeed: 5
+  crouchSpeed: 3
+  walkSpeed: 3
+  runSpeed: 5
   speedChangeRate: 10
   rotationSpeed: 10
   pullDownForce: 5
@@ -6605,6 +6628,8 @@ MonoBehaviour:
   verticalCameraRotationMax: 70
   cameraHorizontalSpeed: 200
   cameraVerticalSpeed: 130
+  animator: {fileID: 13024377}
+  coyoteTime: 0.2
   mouseCameraSensitivity: 1
   controllerCameraSensitivity: 1
   invertY: 1
@@ -6631,7 +6656,7 @@ CharacterController:
   m_Radius: 0.25
   m_SlopeLimit: 45
   m_StepOffset: 0.3
-  m_SkinWidth: 0.08
+  m_SkinWidth: 0.01
   m_MinMoveDistance: 0
   m_Center: {x: 0, y: 0.9, z: 0}
 --- !u!4 &461885443
