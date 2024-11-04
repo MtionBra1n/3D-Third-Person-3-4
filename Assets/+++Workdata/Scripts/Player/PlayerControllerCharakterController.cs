@@ -5,13 +5,15 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
-[RequireComponent(typeof(Rigidbody))]
-public class PlayerController : MonoBehaviour
+[RequireComponent(typeof(CharacterController))]
+public class PlayerControllerCharakterController : MonoBehaviour
 {
     private static readonly int Hash_MovementSpeed = Animator.StringToHash("MovementSpeed");
     private static readonly int Hash_Grounded = Animator.StringToHash("Grounded");
     private static readonly int Hash_Crouched = Animator.StringToHash("Crouched");
     private static readonly int Hash_Jumped = Animator.StringToHash("Jumped");
+    private static readonly int Hash_ActionTrigger = Animator.StringToHash("ActionTrigger");
+    private static readonly int Hash_ActionId = Animator.StringToHash("ActionId");
     
     #region Inspector
     
@@ -24,7 +26,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float walkSpeed = 3f;
     [SerializeField] private float runSpeed = 5f;
     
-    [FormerlySerializedAs("jumpHeight")] [SerializeField] private float jumpForce = 3f;
+    [SerializeField] private float jumpHeight = 3f;
     
     [Min(0)]
     [Tooltip("How fast the movement speed is in-/decreasing.")]
@@ -32,15 +34,11 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] private float rotationSpeed = 10f;
 
-    [Header("Ground")]
-    [SerializeField] private LayerMask raycast_GroundMask = 1;
-    [SerializeField] private float raycast_GroundLength = 0.1f;
-    
     [Header("Slope Movement")] 
     
     [SerializeField] private float pullDownForce = 5f;
 
-    [SerializeField] private LayerMask raycast_SlopeMask = 1;
+    [SerializeField] private LayerMask raycastMask = 1;
 
     [SerializeField] private float raycastLength = 0.5f;
     
@@ -72,14 +70,15 @@ public class PlayerController : MonoBehaviour
     #endregion
     
     #region Private Variables
-    private Rigidbody rb;
+    private CharacterController characterController;
     
-    private GameInput inputActions;
+    public GameInput inputActions;
     private InputAction moveAction;
     private InputAction lookAction;
     private InputAction runAction;
     private InputAction crouchAction;
     private InputAction jumpAction;
+
     
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -95,6 +94,9 @@ public class PlayerController : MonoBehaviour
     private bool isRunning;
     private bool isCrouched;
     private float currentSpeed;
+
+    private int upperBody_AnimLayer;
+    
     [SerializeField] private float gravity = -19.62f;
     private Vector3 velocity;
     
@@ -103,7 +105,9 @@ public class PlayerController : MonoBehaviour
     #region Unity Event Functios
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
+        characterController = GetComponent<CharacterController>();
+        //animator = GetComponentInChildren<>()
+        upperBody_AnimLayer = animator.GetLayerIndex("Upper Body");
         
         inputActions = new GameInput();
         moveAction = inputActions.Player.Move;
@@ -128,20 +132,24 @@ public class PlayerController : MonoBehaviour
         crouchAction.canceled += CrouchInput;
         
         jumpAction.performed += JumpInput;
+        
+        
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         ReadInput();
+        
         Rotate(moveInput);
         Move(moveInput);
-        
+
         CheckGround();
+        
+        UpdateAnimator();
     }
 
     private void LateUpdate()
     {
-        UpdateAnimator();
         RotateCamera(lookInput);
     }
 
@@ -189,7 +197,7 @@ public class PlayerController : MonoBehaviour
     {
         if (isGrounded)
         {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
             animator.SetBool(Hash_Jumped, true);
         }
     }
@@ -203,9 +211,10 @@ public class PlayerController : MonoBehaviour
         if (moveInput != Vector2.zero)
         {
             Vector3 inputDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
+
             Vector3 worldInputDirection = cameraTarget.TransformDirection(inputDirection);
             worldInputDirection.y = 0;
-        
+            
             characterTargetRotation = Quaternion.LookRotation(worldInputDirection);
         }
 
@@ -221,25 +230,41 @@ public class PlayerController : MonoBehaviour
     
     private void Move(Vector2 moveInput)
     { 
+                            //(Ist mein Input == 0,0     JA . ODER...    
         float targetSpeed = moveInput == Vector2.zero ? 0 : this.currentSpeed * moveInput.magnitude;
+
+        Vector3 currentVelocity = lastMovement;
+        currentVelocity.y = 0;
+
+        float currentSpeed = currentVelocity.magnitude;
+
+        if (Mathf.Abs(currentSpeed - targetSpeed) > 0.01f)
+        {
+            currentSpeed = Mathf.Lerp(currentSpeed, targetSpeed, speedChangeRate * Time.deltaTime);
+        }
+        else
+        {
+            currentSpeed = targetSpeed;
+        }
 
         Vector3 targetDirection = characterTargetRotation * Vector3.forward;
 
-        Vector3 movement = targetDirection * targetSpeed;
-        
-        Vector3 velocity = rb.velocity;
-        velocity.x = movement.x;
-        velocity.z = movement.z;
-        
-        rb.velocity = velocity;
-        
+        Vector3 movement = targetDirection * currentSpeed;
+        if (!isGrounded)
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
+        movement.y = velocity.y;
+
+        characterController.Move(movement * Time.deltaTime);
 
         if (Physics.Raycast(transform.position + Vector3.up * 0.01f, Vector3.down, out RaycastHit hit,
-                raycastLength, raycast_SlopeMask, QueryTriggerInteraction.Ignore))
+                raycastLength, raycastMask, QueryTriggerInteraction.Ignore))
         {
             if (Vector3.ProjectOnPlane(movement, hit.normal).y < 0)
             {
-                //characterController.Move(Vector3.down * (pullDownForce * Time.deltaTime));
+                characterController.Move(Vector3.down * (pullDownForce * Time.deltaTime));
             }
         }
         
@@ -252,8 +277,7 @@ public class PlayerController : MonoBehaviour
 
     private void CheckGround()
     {
-        if (Physics.Raycast(transform.position + Vector3.up * 0.01f, Vector3.down, out RaycastHit hit,
-                raycast_GroundLength, raycast_GroundMask, QueryTriggerInteraction.Ignore))
+        if (characterController.isGrounded)
         {
             airTime = 0;
         }
@@ -284,6 +308,23 @@ public class PlayerController : MonoBehaviour
     {
         animator.SetBool(Hash_Jumped, false);
     }
+
+    public void UpperBody_Layer(float weight)
+    {
+        animator.SetLayerWeight(upperBody_AnimLayer, weight);
+    }
+    
+    public void AnimationsAction(int id)
+    {
+        animator.SetTrigger(Hash_ActionTrigger);
+        animator.SetInteger(Hash_ActionId, id);
+    }
+
+    public void EndAction()
+    {
+        UpperBody_Layer(0);
+        animator.SetInteger(Hash_ActionId, 0);
+    }
     
     #endregion
     
@@ -294,34 +335,40 @@ public class PlayerController : MonoBehaviour
         if (lookInput != Vector2.zero)
         {
             bool isMouseLook = IsMouseLook();
+
             float deltaTimeMultiplier = isMouseLook ? 1 : Time.deltaTime;
+            //                     Bedingung     true                       false
             float sensitivity = isMouseLook ? mouseCameraSensitivity : controllerCameraSensitivity;
 
             lookInput *= deltaTimeMultiplier * sensitivity;
             
-            cameraRotation.x += lookInput.y * cameraVerticalSpeed * (invertY ? -1 : 1);
+            cameraRotation.x += lookInput.y * cameraVerticalSpeed * (!isMouseLook && invertY ? -1 : 1);
+
             cameraRotation.y += lookInput.x * cameraHorizontalSpeed;
-            
+
             cameraRotation.x = NormalizeAngle(cameraRotation.x);
             cameraRotation.y = NormalizeAngle(cameraRotation.y);
-            
+
             cameraRotation.x = Mathf.Clamp(cameraRotation.x, verticalCameraRotationMin, verticalCameraRotationMax);
-            
-            cameraTarget.rotation = Quaternion.Euler(cameraRotation.x, cameraRotation.y, 0);
         }
+        
+        cameraTarget.rotation = Quaternion.Euler(cameraRotation.x, cameraRotation.y, 0);
     }
 
     private float NormalizeAngle(float angle)
     {
-        angle = angle % 360;
+        angle %= 360;
+
+        if (angle < 0)
+        {
+            angle += 360;
+        }
+
         if (angle > 180)
         {
             angle -= 360;
         }
-        else if (angle < -180)
-        {
-            angle += 360;
-        }
+
         return angle;
     }
 
