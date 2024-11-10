@@ -9,6 +9,7 @@ public class PlayerActionAbility : MonoBehaviour
     private PlayerControllerCharakterController playerController;
     private InputAction leftClickAction;
 
+    
     private void Awake()
     {
         playerController = GetComponent<PlayerControllerCharakterController>();
@@ -36,5 +37,6 @@ public class PlayerActionAbility : MonoBehaviour
         playerController.UpperBody_Layer(1);
         playerController.AnimationsAction(1);
     }
+
 
 }
