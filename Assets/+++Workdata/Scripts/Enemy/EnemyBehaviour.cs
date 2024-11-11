@@ -12,8 +12,11 @@ public class EnemyBehaviour : MonoBehaviour
     #region Inspector
 
     [SerializeField] int enemyHealth;
+    
+    [Header("Animation")]
     [SerializeField] Animator animator;
-
+    [SerializeField] private float blendSpeed = 1;
+    
     #endregion
     
     #region Private Variables
@@ -23,12 +26,12 @@ public class EnemyBehaviour : MonoBehaviour
     
     public void GetDamage(int damage)
     {
-        if (enemyHealth < 0) return;
+        if (enemyHealth < 1) return;
         
         enemyHealth -= damage;
 
         animator.SetTrigger(Hash_ActionTrigger);
-        if (enemyHealth < 0)
+        if (enemyHealth < 1)
         {
             OnDeath();
         }
@@ -50,12 +53,28 @@ public class EnemyBehaviour : MonoBehaviour
     
     public void OnAggroEnter(int movementTypeId)
     {
-        animator.SetFloat(Hash_MovementType, movementTypeId);
+        print("check");
+        StartCoroutine(AggroMovementType(1));
     }
     
     public void OnAggroExit()
     {
-        animator.SetFloat(Hash_MovementType, 0);
+        StartCoroutine(AggroMovementType(0));
     }
-    
+
+
+    IEnumerator AggroMovementType(float targetValue)
+    {
+        while (Mathf.Abs(animator.GetFloat(Hash_MovementType) - targetValue) > 0.01)
+        {
+            float movementTypeValue =
+                ValueInterpolator.MoveTowards(animator.GetFloat(Hash_MovementType), 
+                    targetValue, blendSpeed, Time.deltaTime);
+            
+            animator.SetFloat(Hash_MovementType, movementTypeValue);
+            yield return null;
+        }
+        
+        animator.SetFloat(Hash_MovementType, targetValue);
+    }
 }

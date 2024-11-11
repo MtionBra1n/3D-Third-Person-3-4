@@ -78,7 +78,9 @@ public class PlayerControllerCharakterController : MonoBehaviour
     private InputAction runAction;
     private InputAction crouchAction;
     private InputAction jumpAction;
+    private InputAction interactAction;
 
+    private Interactable selectedInteractable;
     
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -115,6 +117,8 @@ public class PlayerControllerCharakterController : MonoBehaviour
         runAction = inputActions.Player.ShiftRun;
         crouchAction = inputActions.Player.Crouch;
         jumpAction = inputActions.Player.Jump;
+        interactAction = inputActions.Player.Interact;
+
         
         characterTargetRotation = transform.rotation;
         cameraRotation = cameraTarget.rotation.eulerAngles;
@@ -124,7 +128,7 @@ public class PlayerControllerCharakterController : MonoBehaviour
 
     private void OnEnable()
     {
-        inputActions.Enable();
+        EnableInput();
         runAction.performed += ShiftInput;
         runAction.canceled += ShiftInput;
 
@@ -133,7 +137,7 @@ public class PlayerControllerCharakterController : MonoBehaviour
         
         jumpAction.performed += JumpInput;
         
-        
+        interactAction.performed += Interact;
     }
 
     private void Update()
@@ -155,7 +159,7 @@ public class PlayerControllerCharakterController : MonoBehaviour
 
     private void OnDisable()
     {
-        inputActions.Disable();
+        DisableInput();
         runAction.performed -= ShiftInput;
         runAction.canceled -= ShiftInput;
         
@@ -163,6 +167,8 @@ public class PlayerControllerCharakterController : MonoBehaviour
         crouchAction.canceled -= CrouchInput;
         
         jumpAction.performed -= JumpInput;
+        
+        interactAction.performed -= Interact;
     }
 
     private void OnDestroy()
@@ -173,6 +179,16 @@ public class PlayerControllerCharakterController : MonoBehaviour
     
     #region Input
 
+    public void EnableInput()
+    {
+        inputActions.Enable();
+    }
+
+    public void DisableInput()
+    {
+        inputActions.Disable();
+    }
+    
     void ReadInput()
     {
         moveInput = moveAction.ReadValue<Vector2>();
@@ -269,6 +285,60 @@ public class PlayerControllerCharakterController : MonoBehaviour
         }
         
         lastMovement = movement;
+    }
+    
+    #endregion
+    
+    #region Physics
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        TrySelectInteractable(other);
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        TryDeselectInteractable(other);
+    }
+
+    #endregion
+    
+    #region Interaction
+
+    private void Interact(InputAction.CallbackContext ctx)
+    {
+        if (selectedInteractable != null)
+        {
+            selectedInteractable.Interact();
+        }
+    }
+
+    private void TrySelectInteractable(Collider2D other)
+    {
+        Interactable interactable = other.GetComponent<Interactable>();
+
+        if (interactable == null){ return; }
+
+        if (selectedInteractable != null)
+        {
+            selectedInteractable.Deselect();
+        }
+        
+        selectedInteractable = interactable;
+        selectedInteractable.Select();
+    }
+    
+    private void TryDeselectInteractable(Collider2D other)
+    {
+        Interactable interactable = other.GetComponent<Interactable>();
+
+        if (interactable == null){ return; }
+
+        if (interactable == selectedInteractable)
+        {
+            selectedInteractable.Deselect();
+            selectedInteractable = null;
+        }
     }
     
     #endregion
