@@ -80,6 +80,9 @@ public class PlayerControllerCharakterController : MonoBehaviour
     private InputAction jumpAction;
     private InputAction interactAction;
     
+    public Interactable selectedInteractable;
+
+    
     private Vector2 moveInput;
     private Vector2 lookInput;
     
@@ -134,6 +137,9 @@ public class PlayerControllerCharakterController : MonoBehaviour
         crouchAction.canceled += CrouchInput;
         
         jumpAction.performed += JumpInput;
+        
+        interactAction.performed += Interact;
+
     }
 
     private void Update()
@@ -163,6 +169,9 @@ public class PlayerControllerCharakterController : MonoBehaviour
         crouchAction.canceled -= CrouchInput;
         
         jumpAction.performed -= JumpInput;
+        
+        interactAction.performed -= Interact;
+
     }
     
     #endregion
@@ -331,6 +340,60 @@ public class PlayerControllerCharakterController : MonoBehaviour
         UpperBody_Layer(0);
         animator.SetInteger(Hash_ActionId, 0);
     }
+    
+    #endregion
+    
+    #region Physics
+    private void OnTriggerEnter(Collider other)
+    {
+        TrySelectInteractable(other);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        TryDeselectInteractable(other);
+    }
+
+    #endregion
+    
+    #region Interaction
+
+    private void Interact(InputAction.CallbackContext ctx)
+    {
+        if (selectedInteractable != null)
+        {
+            selectedInteractable.Interact();
+        }
+    }
+
+    private void TrySelectInteractable(Collider other)
+    {
+        Interactable interactable = other.GetComponent<Interactable>();
+
+        if (interactable == null){ return; }
+
+        if (selectedInteractable != null)
+        {
+            selectedInteractable.Deselect();
+        }
+        
+        selectedInteractable = interactable;
+        selectedInteractable.Select();
+    }
+    
+    private void TryDeselectInteractable(Collider other)
+    {
+        Interactable interactable = other.GetComponent<Interactable>();
+
+        if (interactable == null){ return; }
+
+        if (interactable == selectedInteractable)
+        {
+            selectedInteractable.Deselect();
+            selectedInteractable = null;
+        }
+    }
+    
     
     #endregion
     

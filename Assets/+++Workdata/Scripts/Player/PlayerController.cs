@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour
     private static readonly int Hash_Grounded = Animator.StringToHash("Grounded");
     private static readonly int Hash_Crouched = Animator.StringToHash("Crouched");
     private static readonly int Hash_Jumped = Animator.StringToHash("Jumped");
-    
+
     #region Inspector
     
     [FormerlySerializedAs("movementSpeed")]
@@ -80,6 +80,8 @@ public class PlayerController : MonoBehaviour
     private InputAction runAction;
     private InputAction crouchAction;
     private InputAction jumpAction;
+    
+    private Interactable selectedInteractable;
     
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -284,6 +286,60 @@ public class PlayerController : MonoBehaviour
     {
         animator.SetBool(Hash_Jumped, false);
     }
+    
+    #endregion
+    
+    #region Physics
+    private void OnTriggerEnter(Collider other)
+    {
+        TrySelectInteractable(other);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        TryDeselectInteractable(other);
+    }
+
+    #endregion
+    
+    #region Interaction
+
+    private void Interact(InputAction.CallbackContext ctx)
+    {
+        if (selectedInteractable != null)
+        {
+            selectedInteractable.Interact();
+        }
+    }
+
+    private void TrySelectInteractable(Collider other)
+    {
+        Interactable interactable = other.GetComponent<Interactable>();
+
+        if (interactable == null){ return; }
+
+        if (selectedInteractable != null)
+        {
+            selectedInteractable.Deselect();
+        }
+        
+        selectedInteractable = interactable;
+        selectedInteractable.Select();
+    }
+    
+    private void TryDeselectInteractable(Collider other)
+    {
+        Interactable interactable = other.GetComponent<Interactable>();
+
+        if (interactable == null){ return; }
+
+        if (interactable == selectedInteractable)
+        {
+            selectedInteractable.Deselect();
+            selectedInteractable = null;
+        }
+    }
+    
     
     #endregion
     
