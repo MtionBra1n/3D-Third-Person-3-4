@@ -32,7 +32,8 @@ public class EventLogManager : MonoBehaviour
     private TextMeshProUGUI eventLog_Text;
 
     public float visibleTime = 2f;
-
+    private Coroutine _coroutine;
+    
     private void Awake()
     {
         anim = GetComponent<Animator>();
@@ -41,12 +42,15 @@ public class EventLogManager : MonoBehaviour
 
     public void SetEventLogText(string textValue)
     {
-        if (!anim.enabled)
-            anim.enabled = true;
-        
-        eventLog_Text.SetText(textValue);
-        
-        StartCoroutine(InitiateEventLog());
+        if (_coroutine == null)
+        {
+            if (!anim.enabled)
+                anim.enabled = true;
+
+            eventLog_Text.SetText(textValue);
+
+            _coroutine = StartCoroutine(InitiateEventLog());
+        }
     }
 
     IEnumerator InitiateEventLog()
@@ -54,6 +58,8 @@ public class EventLogManager : MonoBehaviour
         anim.Play("FadeIn");
         yield return new WaitForSeconds(visibleTime);
         anim.Play("FadeOut");
+        yield return new WaitForSeconds(.5f);
+        _coroutine = null;
     }
 
 }
