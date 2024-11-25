@@ -14,7 +14,10 @@ public class PlayerControllerCharakterController : MonoBehaviour
     private static readonly int Hash_Jumped = Animator.StringToHash("Jumped");
     private static readonly int Hash_ActionTrigger = Animator.StringToHash("ActionTrigger");
     private static readonly int Hash_ActionId = Animator.StringToHash("ActionId");
-    
+    private static readonly int Hash_WeaponEquipTrigger = Animator.StringToHash("WeaponEquipTrigger");
+    private static readonly int Hash_WeaponId = Animator.StringToHash("WeaponId");
+    private static readonly int Hash_WeaponUnequipTrigger = Animator.StringToHash("WeaponUnequipTrigger");
+
     #region Inspector
     
     [FormerlySerializedAs("movementSpeed")]
@@ -54,7 +57,7 @@ public class PlayerControllerCharakterController : MonoBehaviour
     [SerializeField] private float cameraVerticalSpeed = 130f;
     
     [Header("Animator")]
-    [SerializeField] private Animator animator;
+    public Animator animator;
 
     [SerializeField] private float coyoteTime = .2f;
     
@@ -339,6 +342,18 @@ public class PlayerControllerCharakterController : MonoBehaviour
     {
         UpperBody_Layer(0);
         animator.SetInteger(Hash_ActionId, 0);
+    }
+    
+    public void AnimationsWeaponEquip(int id)
+    {
+        animator.SetTrigger(Hash_WeaponEquipTrigger);
+        animator.SetInteger(Hash_WeaponId, id);
+    }
+    
+    public void AnimationsWeaponUnequip(int id)
+    {
+        animator.SetTrigger(Hash_WeaponUnequipTrigger);
+        animator.SetInteger(Hash_WeaponId, id);
     }
     
     #endregion
