@@ -219,6 +219,12 @@ public class PlayerControllerCharakterController : MonoBehaviour
             animator.SetBool(Hash_Jumped, true);
         }
     }
+
+    public bool IsMoving()
+    {
+        print(moveInput);
+        return moveInput != Vector2.zero;
+    }
     
     #endregion
     
