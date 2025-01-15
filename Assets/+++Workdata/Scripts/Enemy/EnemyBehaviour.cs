@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,7 +9,8 @@ public class EnemyBehaviour : MonoBehaviour
     private static readonly int Hash_Dead = Animator.StringToHash("Dead");
     private static readonly int Hash_MovementType = Animator.StringToHash("MovementType");
     private static readonly int Hash_ActionTrigger = Animator.StringToHash("ActionTrigger");
-
+    private static readonly int Hash_ActionId = Animator.StringToHash("ActionId");
+    
     #region Inspector
 
     [SerializeField] int enemyHealth;
@@ -16,12 +18,41 @@ public class EnemyBehaviour : MonoBehaviour
     [Header("Animation")]
     [SerializeField] Animator animator;
     [SerializeField] private float blendSpeed = 1;
-    
-    #endregion
-    
-    #region Private Variables
 
+    [Header("AttackTypes")] 
+    
+    [SerializeField] private  int attackId;
+    [SerializeField] private  int attackDamage;
+    [SerializeField] private float attackTime;
     #endregion
+
+    private float attackTimer;
+    private bool canAttack;
+
+    private void Update()
+    {
+        if (canAttack)
+        {
+            attackTimer -= Time.deltaTime;
+
+            if (attackTimer < 0)
+            {
+                AttackPlayer();
+            }
+        }
+    }
+
+    public void CanAttackPlayer(bool value)
+    {
+        canAttack = value;
+    }
+    
+    void AttackPlayer()
+    {
+        animator.SetTrigger(Hash_ActionTrigger);
+        animator.SetInteger(Hash_ActionId, attackId);
+        attackTimer = attackTime;
+    }
     
     
     public void GetDamage(int damage)
