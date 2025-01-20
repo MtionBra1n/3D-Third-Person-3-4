@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 public class EnemyBehaviour : MonoBehaviour
 {
@@ -13,7 +15,10 @@ public class EnemyBehaviour : MonoBehaviour
     
     #region Inspector
 
-    [SerializeField] int enemyHealth;
+    [Header("Enemy Health")] 
+    [SerializeField] private int maxEnemyHealth = 100;
+
+    [SerializeField] private Image healthbar;
     
     [Header("Animation")]
     [SerializeField] Animator animator;
@@ -28,6 +33,13 @@ public class EnemyBehaviour : MonoBehaviour
 
     private float attackTimer;
     private bool canAttack;
+    private int currentHealthPoints;
+
+    private void Start()
+    {
+        currentHealthPoints = maxEnemyHealth;
+        RefreshHealthbar();
+    }
 
     private void Update()
     {
@@ -54,15 +66,14 @@ public class EnemyBehaviour : MonoBehaviour
         attackTimer = attackTime;
     }
     
-    
     public void GetDamage(int damage)
     {
-        if (enemyHealth < 1) return;
+        if (currentHealthPoints < 1) return;
         
-        enemyHealth -= damage;
+        currentHealthPoints -= damage;
 
         animator.SetTrigger(Hash_ActionTrigger);
-        if (enemyHealth < 1)
+        if (currentHealthPoints < 1)
         {
             OnDeath();
         }
@@ -70,6 +81,7 @@ public class EnemyBehaviour : MonoBehaviour
         {
             OnHit();
         }
+        RefreshHealthbar();
     }
     
     public void OnDeath()
@@ -93,7 +105,12 @@ public class EnemyBehaviour : MonoBehaviour
         StartCoroutine(AggroMovementType(0));
     }
 
-
+    void RefreshHealthbar()
+    {
+        healthbar.fillAmount =  (float)currentHealthPoints / (float)maxEnemyHealth;
+    }
+    
+    
     IEnumerator AggroMovementType(float targetValue)
     {
         while (Mathf.Abs(animator.GetFloat(Hash_MovementType) - targetValue) > 0.01)

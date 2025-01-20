@@ -1,22 +1,27 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
-using Random = UnityEngine.Random;
 
+
+enum EnemyPosBehaviour
+{
+    RandomPos, 
+    FrontPos, 
+    BackPos, 
+    SitePos
+}
 public class NavMeshChase : MonoBehaviour
 {
 private static readonly int Hash_MovementSpeed = Animator.StringToHash("MovementSpeed");
     
     #region Inspector
 
+    [SerializeField] private EnemyPosBehaviour enemyPosBehaviour;
     [SerializeField] private Animator anim;
     [SerializeField] private Transform player;
     [SerializeField] private float rotationSpeed = 2f;
     [SerializeField] private float attackingDistance =.5f;
-
+    [SerializeField] private float rotationDistance =4f;
+    [SerializeField] private float positioningDistance = 3f;
 
     [SerializeField] private bool showGizmos = true;
     #endregion
@@ -25,6 +30,7 @@ private static readonly int Hash_MovementSpeed = Animator.StringToHash("Movement
     private EnemyBehaviour _enemyBehaviour;
     private bool chasePlayer;
     private bool attackReady;
+    private bool hasPositioningPoint;
     
     #region Unity Event Functions
 
@@ -41,24 +47,57 @@ private static readonly int Hash_MovementSpeed = Animator.StringToHash("Movement
         
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        if (!navMeshAgent.isStopped && chasePlayer)
+        if (!navMeshAgent.isStopped && chasePlayer )
         {
-            if (!attackReady)
+            if (!attackReady && !hasPositioningPoint)
             {
                 navMeshAgent.destination = player.position;
             }
-
+        }
+        
+        if (distanceToPlayer <= rotationDistance)
+        {
             SmoothLookAtPlayer();
+        }
+
+        if (distanceToPlayer <= positioningDistance && !hasPositioningPoint)
+        {
+            hasPositioningPoint = true;
+            switch (enemyPosBehaviour)
+            {
+                case EnemyPosBehaviour.RandomPos:
+                    navMeshAgent.destination = player.gameObject.GetComponent<PlayerPositioningBehaviour>().GetRandomPositioningPoint().position;
+                    break;
+                
+                case EnemyPosBehaviour.BackPos:
+                    navMeshAgent.destination = player.gameObject.GetComponent<PlayerPositioningBehaviour>().GetBackPositioningPoint().position;
+                    break;
+                
+                case EnemyPosBehaviour.FrontPos:
+                    navMeshAgent.destination = player.gameObject.GetComponent<PlayerPositioningBehaviour>().GetFrontPositioningPoint().position;
+                    break;
+                
+                case EnemyPosBehaviour.SitePos:
+                    navMeshAgent.destination = player.gameObject.GetComponent<PlayerPositioningBehaviour>().GetSitePositioningPoint().position;
+                    break;
+            }
+
+        }
+        else if (distanceToPlayer > positioningDistance && hasPositioningPoint)
+        {
+            hasPositioningPoint = false;
         }
         
         if (distanceToPlayer <= attackingDistance && !attackReady)
         {
             attackReady = true;
+            StopChasingPlayer();
             _enemyBehaviour.CanAttackPlayer(attackReady);
         }
         else if (distanceToPlayer > attackingDistance && attackReady)
         {
             attackReady = false;
+            ChasePlayer();
             _enemyBehaviour.CanAttackPlayer(attackReady);
         }
     }
@@ -102,11 +141,16 @@ private static readonly int Hash_MovementSpeed = Animator.StringToHash("Movement
 
     private void OnDrawGizmos()
     {
-        if (showGizmos)
-        {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, attackingDistance);
-        }
+        if (!showGizmos) return;
+        
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, attackingDistance);
+
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(transform.position, rotationDistance);
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, positioningDistance);
     }
 
     #endregion
